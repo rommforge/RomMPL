@@ -30,4 +30,13 @@
     "\"has_multiple_files\":false,\"missing_from_fs\":false}" \
     "],\"total\":3,\"limit\":2,\"offset\":2}"
 
+/* A GET /api/platforms response: a top-level array of platform objects, each
+ * carrying more than we need. The parser must pull only id + slug. */
+#define FIXTURE_PLATFORMS \
+    "[" \
+    "{\"id\":12,\"slug\":\"ps2\",\"name\":\"PlayStation 2\",\"rom_count\":4213}," \
+    "{\"id\":5,\"slug\":\"snes\",\"name\":\"Super Nintendo\",\"rom_count\":900}," \
+    "{\"id\":9,\"slug\":\"gc\",\"name\":\"GameCube\",\"rom_count\":50}" \
+    "]"
+
 #endif

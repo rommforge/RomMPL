@@ -1,0 +1,14 @@
+services:
+  udpfsd:
+    build: .
+    # Host networking so the PS2 can discover and reach udpfsd via UDP on the
+    # LAN. Linux hosts only. On Docker Desktop (mac/Windows), host networking
+    # does not bridge to the LAN, so run the udpfsd binary natively there.
+    network_mode: host
+    volumes:
+      - ${ROMM_PS2_DIR:?set ROMM_PS2_DIR to RomM's PS2 library path}:/fsroot:ro
+    environment:
+      FSROOT: /fsroot
+      RO: "true"
+      PORT: "62966"
+    restart: unless-stopped

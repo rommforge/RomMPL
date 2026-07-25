@@ -38,6 +38,36 @@ int main(void) {
     t2->close(t2);
     mock_transport_free(t2);
 
+    /* chunked response with mixed-case header value: "ab" + "cde" */
+    const char *ch_mixed =
+        "HTTP/1.1 200 OK\r\nTransfer-Encoding: Chunked\r\n\r\n"
+        "2\r\nab\r\n3\r\ncde\r\n0\r\n\r\n";
+    const char *r2b[] = { ch_mixed };
+    RommplTransport *t2b = mock_transport_new(r2b, 1);
+    t2b->connect(t2b, "h", 80);
+    HttpResponse resp2b;
+    ASSERT_INT_EQ(http_get(t2b, "h", "/x", NULL, &resp2b), 0);
+    ASSERT_INT_EQ(resp2b.body_len, 5);
+    ASSERT(strncmp(resp2b.body, "abcde", 5) == 0);
+    http_response_free(&resp2b);
+    t2b->close(t2b);
+    mock_transport_free(t2b);
+
+    /* chunked response with fully upper-case header value: "xy" + "z" */
+    const char *ch_upper =
+        "HTTP/1.1 200 OK\r\nTransfer-Encoding: CHUNKED\r\n\r\n"
+        "2\r\nxy\r\n1\r\nz\r\n0\r\n\r\n";
+    const char *r2c[] = { ch_upper };
+    RommplTransport *t2c = mock_transport_new(r2c, 1);
+    t2c->connect(t2c, "h", 80);
+    HttpResponse resp2c;
+    ASSERT_INT_EQ(http_get(t2c, "h", "/x", NULL, &resp2c), 0);
+    ASSERT_INT_EQ(resp2c.body_len, 3);
+    ASSERT(strncmp(resp2c.body, "xyz", 3) == 0);
+    http_response_free(&resp2c);
+    t2c->close(t2c);
+    mock_transport_free(t2c);
+
     /* malformed chunked: ends on hex digits, no CRLF terminator */
     const char *malformed =
         "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"

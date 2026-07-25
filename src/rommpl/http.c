@@ -3,7 +3,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
+
+/* Case-insensitive ASCII compare of s against the already-lowercase literal
+ * lower, for n bytes. Avoids strncasecmp so this file stays free of POSIX
+ * headers (it must cross-compile with PS2SDK later). */
+static int ci_equal_n(const char *s, const char *lower, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        char c = s[i];
+        if (c >= 'A' && c <= 'Z') c = (char)(c + 32);
+        if (c != lower[i]) return 0;
+    }
+    return 1;
+}
 
 /* Drain the whole response off the transport into one growable buffer. */
 static char *slurp(RommplTransport *t, size_t *out_len) {
@@ -103,7 +114,7 @@ int http_get(RommplTransport *t, const char *host, const char *path,
     /* chunked? (case-insensitive scan of the header block) */
     int chunked = 0;
     for (size_t i = 0; i + 6 < header_len; i++) {
-        if (strncasecmp(raw + i, "chunked", 7) == 0) { chunked = 1; break; }
+        if (ci_equal_n(raw + i, "chunked", 7)) { chunked = 1; break; }
     }
 
     if (chunked) {

@@ -10,9 +10,6 @@ static int sink(const RomEntry *e, void *u) {
     Sink *s = (Sink *)u; s->ids[s->count++] = e->id; return 0;
 }
 
-/* Wrap the two page fixtures as full HTTP responses. */
-#define HTTP_WRAP(json) "HTTP/1.1 200 OK\r\nContent-Length: 999999\r\n\r\n" json
-
 int main(void) {
     static char page1[4096], page2[4096];
     snprintf(page1, sizeof page1,

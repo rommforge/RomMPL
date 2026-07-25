@@ -1,7 +1,6 @@
 #include "rommpl/rommapi.h"
 #include "rommpl/http.h"
 #include <stdio.h>
-#include <string.h>
 
 typedef struct { RomEntryCallback cb; void *user; int emitted; } Relay;
 

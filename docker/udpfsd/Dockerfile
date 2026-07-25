@@ -14,6 +14,6 @@ FROM alpine:3.20
 COPY --from=build /out/udpfsd /usr/local/bin/udpfsd
 # udpfsd reads FSROOT / RO / PORT from the environment (or flags). Defaults here
 # serve /fsroot read-only on the standard UDPBD port.
-ENV FSROOT=/fsroot RO=true PORT=62966
+ENV FSROOT=/fsroot RO=1 PORT=62966
 EXPOSE 62966/udp
 ENTRYPOINT ["udpfsd"]

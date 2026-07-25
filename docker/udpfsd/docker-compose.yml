@@ -9,6 +9,6 @@ services:
       - ${ROMM_PS2_DIR:?set ROMM_PS2_DIR to RomM's PS2 library path}:/fsroot:ro
     environment:
       FSROOT: /fsroot
-      RO: "true"
+      RO: "1"
       PORT: "62966"
     restart: unless-stopped

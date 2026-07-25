@@ -14,7 +14,7 @@ enum {
 };
 
 /* Compact, fixed-size view of a RomM rom. Everything the console needs; nothing
- * it does not. Roughly 640 bytes, so a 500-game library is about 300 KB. */
+ * it does not. Roughly 600 bytes, so a 500-game library is about 300 KB. */
 typedef struct {
     uint32_t id;                          /* RomM rom id */
     char     name[ROMMPL_NAME_MAX];       /* display name (fallback: fs_name_no_ext) */

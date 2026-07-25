@@ -30,11 +30,12 @@ static int mock_write(RommplTransport *t, const char *buf, size_t len) {
     memcpy(s->written + s->written_len, buf, cp);
     s->written_len += cp;
     s->written[s->written_len] = '\0';
-    return (int)len;
+    return (int)cp;
 }
 
 static int mock_read(RommplTransport *t, char *buf, size_t len) {
     MockState *s = (MockState *)t->impl;
+    if (s->cur >= s->n || s->read_pos > strlen(s->responses[s->cur])) return -1;
     const char *resp = s->responses[s->cur];
     size_t avail = strlen(resp) - s->read_pos;
     size_t cp = len < avail ? len : avail;
@@ -46,6 +47,7 @@ static int mock_read(RommplTransport *t, char *buf, size_t len) {
 static void mock_close(RommplTransport *t) {
     MockState *s = (MockState *)t->impl;
     s->cur++;            /* next connect serves the next response */
+    s->read_pos = 0;     /* reset read cursor for safety */
 }
 
 static RommplTransport *mock_transport_new(const char **responses, int n) {

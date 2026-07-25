@@ -1,4 +1,5 @@
 #include "rommpl/http.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,15 +28,27 @@ static int parse_dechunk(const char *body, size_t body_len,
     if (!dst) return -1;
     size_t di = 0, i = 0;
     while (i < body_len) {
-        char *endp = NULL;
-        long sz = strtol(body + i, &endp, 16);
-        if (endp == body + i) { free(dst); return -1; }
-        i = (size_t)(endp - body);
+        /* Parse hex chunk size manually, bounded by body_len */
+        long sz = 0;
+        size_t hex_start = i;
+        while (i < body_len && isxdigit((unsigned char)body[i])) {
+            char c = body[i];
+            int digit = (c >= '0' && c <= '9') ? (c - '0') :
+                        (c >= 'a' && c <= 'f') ? (c - 'a' + 10) :
+                        (c >= 'A' && c <= 'F') ? (c - 'A' + 10) : -1;
+            sz = sz * 16 + digit;
+            i++;
+        }
+        /* Error if no hex digits found or end of buffer reached */
+        if (i == hex_start || i >= body_len) { free(dst); return -1; }
+        /* Skip CRLF after hex size */
         while (i < body_len && (body[i] == '\r' || body[i] == '\n')) i++;
+        /* Stop on zero chunk or if we hit end of buffer without proper data */
         if (sz <= 0) break;
         if (i + (size_t)sz > body_len) { free(dst); return -1; }
         memcpy(dst + di, body + i, (size_t)sz);
         di += (size_t)sz; i += (size_t)sz;
+        /* Skip CRLF after chunk data */
         while (i < body_len && (body[i] == '\r' || body[i] == '\n')) i++;
     }
     dst[di] = '\0';
@@ -59,7 +72,13 @@ int http_get(RommplTransport *t, const char *host, const char *path,
             path, host);
     }
     if (rn <= 0 || (size_t)rn >= sizeof req) return -1;
-    if (t->write(t, req, (size_t)rn) < 0) return -1;
+    /* Write request in a loop until all bytes are sent; handle partial writes */
+    size_t written = 0;
+    while (written < (size_t)rn) {
+        int n = t->write(t, req + written, (size_t)rn - written);
+        if (n <= 0) return -1;  /* Error or no progress on write */
+        written += (size_t)n;
+    }
 
     size_t raw_len = 0;
     char *raw = slurp(t, &raw_len);

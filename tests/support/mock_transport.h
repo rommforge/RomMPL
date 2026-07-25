@@ -12,6 +12,7 @@ typedef struct {
     size_t       read_pos;   /* read cursor within current response */
     char         written[4096];
     size_t       written_len;
+    int          write_limit;  /* 0 = no limit, >0 = max bytes per write (for testing short writes) */
 } MockState;
 
 static int mock_connect(RommplTransport *t, const char *host, int port) {
@@ -27,6 +28,10 @@ static int mock_write(RommplTransport *t, const char *buf, size_t len) {
     MockState *s = (MockState *)t->impl;
     size_t room = sizeof s->written - 1 - s->written_len;
     size_t cp = len < room ? len : room;
+    /* If write_limit is set, cap the copy to that many bytes (for testing short writes) */
+    if (s->write_limit > 0 && cp > (size_t)s->write_limit) {
+        cp = (size_t)s->write_limit;
+    }
     memcpy(s->written + s->written_len, buf, cp);
     s->written_len += cp;
     s->written[s->written_len] = '\0';
@@ -53,9 +58,17 @@ static void mock_close(RommplTransport *t) {
 static RommplTransport *mock_transport_new(const char **responses, int n) {
     RommplTransport *t = (RommplTransport *)calloc(1, sizeof *t);
     MockState *s = (MockState *)calloc(1, sizeof *s);
-    s->responses = responses; s->n = n; s->cur = 0;
+    s->responses = responses; s->n = n; s->cur = 0; s->write_limit = 0;
     t->connect = mock_connect; t->write = mock_write;
     t->read = mock_read; t->close = mock_close; t->impl = s;
+    return t;
+}
+
+/* Create a mock transport with a write limit (for testing partial writes) */
+static __attribute__((unused)) RommplTransport *mock_transport_new_with_write_limit(const char **responses, int n, int limit) {
+    RommplTransport *t = mock_transport_new(responses, n);
+    MockState *s = (MockState *)t->impl;
+    s->write_limit = limit;
     return t;
 }
 

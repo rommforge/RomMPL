@@ -1,6 +1,8 @@
 #include "rommpl/rommapi.h"
 #include "rommpl/http.h"
+#include "rommpl/platform_parser.h"
 #include <stdio.h>
+#include <string.h>
 
 typedef struct { RomEntryCallback cb; void *user; int emitted; } Relay;
 
@@ -41,4 +43,29 @@ int rommapi_list_platform_roms(RommApi *api, int platform_id, int page_size,
         if (total >= 0 && r.emitted >= total) break;      /* got them all */
     }
     return r.emitted;
+}
+
+typedef struct { const char *slug; uint32_t id; int found; } ResolveCtx;
+
+static int resolve_cb(const PlatformEntry *e, void *u) {
+    ResolveCtx *c = (ResolveCtx *)u;
+    if (strcmp(e->slug, c->slug) == 0) { c->id = e->id; c->found = 1; return -1; }
+    return 0;
+}
+
+int rommapi_resolve_platform_id(RommApi *api, const char *slug, uint32_t *out_id) {
+    if (api->transport->connect(api->transport, api->host, api->port) < 0) return -1;
+    HttpResponse resp;
+    int gr = http_get(api->transport, api->host, "/api/platforms", api->token, &resp);
+    api->transport->close(api->transport);
+    if (gr != 0) return -1;
+    if (resp.status != 200) { http_response_free(&resp); return -1; }
+
+    ResolveCtx ctx = { slug, 0, 0 };
+    int pr = platform_parse_list(resp.body, resp.body_len, resolve_cb, &ctx);
+    http_response_free(&resp);
+    if (pr < 0 && !ctx.found) return -1;              /* malformed JSON */
+    if (!ctx.found) return 1;          /* ok, no match */
+    *out_id = ctx.id;
+    return 0;
 }

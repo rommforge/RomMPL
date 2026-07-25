@@ -3,6 +3,7 @@
 
 #include "rommpl/transport.h"
 #include "rommpl/rom_parser.h"
+#include <stdint.h>
 
 typedef struct {
     RommplTransport *transport;  /* reconnected per page */
@@ -15,5 +16,10 @@ typedef struct {
  * emitted, or negative on error. */
 int rommapi_list_platform_roms(RommApi *api, int platform_id, int page_size,
                                RomEntryCallback cb, void *user);
+
+/* Resolve a platform slug (e.g. "ps2") to its RomM platform id via
+ * GET /api/platforms. Returns 0 and sets *out_id on match, 1 if the request
+ * succeeded but no platform matched, negative on error. */
+int rommapi_resolve_platform_id(RommApi *api, const char *slug, uint32_t *out_id);
 
 #endif

@@ -4,6 +4,7 @@
 #include "test.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
 typedef struct { int count; uint32_t ids[8]; } Sink;
 static int sink(const RomEntry *e, void *u) {
@@ -34,5 +35,29 @@ int main(void) {
     ASSERT(strstr(mock_transport_written(t), "offset=2") != NULL);  /* second page requested */
 
     mock_transport_free(t);
+
+    /* --- resolve_platform_id --- */
+    static char resp[1024];
+    snprintf(resp, sizeof resp,
+        "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\n\r\n%s",
+        strlen(FIXTURE_PLATFORMS), FIXTURE_PLATFORMS);
+    const char *responses_resolve[] = { resp };
+    RommplTransport *t_resolve = mock_transport_new(responses_resolve, 1);
+    RommApi api_resolve = { t_resolve, "h", 8080, "tok" };
+    uint32_t id = 0;
+    int rc = rommapi_resolve_platform_id(&api_resolve, "ps2", &id);
+    ASSERT_INT_EQ(rc, 0);
+    ASSERT_INT_EQ(id, 12);
+    ASSERT(strstr(mock_transport_written(t_resolve), "GET /api/platforms") != NULL);
+    mock_transport_free(t_resolve);
+
+    const char *responses_resolve2[] = { resp };
+    RommplTransport *t_resolve2 = mock_transport_new(responses_resolve2, 1);
+    RommApi api_resolve2 = { t_resolve2, "h", 8080, "tok" };
+    uint32_t id2 = 999;
+    int rc2 = rommapi_resolve_platform_id(&api_resolve2, "dreamcast", &id2);
+    ASSERT_INT_EQ(rc2, 1);          /* request ok, no match */
+    mock_transport_free(t_resolve2);
+
     return TEST_SUMMARY();
 }

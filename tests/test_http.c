@@ -64,6 +64,9 @@ int main(void) {
     ASSERT_INT_EQ(resp4.status, 200);
     ASSERT_INT_EQ(resp4.body_len, 2);
     ASSERT(strncmp(resp4.body, "OK", 2) == 0);
+    /* Verify the full request was written (write loop worked): request ends with CRLF CRLF */
+    const char *written = mock_transport_written(t4);
+    ASSERT(strstr(written, "Connection: close\r\n\r\n") != NULL);
     http_response_free(&resp4);
     t4->close(t4);
     mock_transport_free(t4);

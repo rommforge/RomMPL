@@ -29,7 +29,7 @@ static int parse_dechunk(const char *body, size_t body_len,
     size_t di = 0, i = 0;
     while (i < body_len) {
         /* Parse hex chunk size manually, bounded by body_len */
-        long sz = 0;
+        size_t sz = 0;
         size_t hex_start = i;
         while (i < body_len && isxdigit((unsigned char)body[i])) {
             char c = body[i];
@@ -44,7 +44,7 @@ static int parse_dechunk(const char *body, size_t body_len,
         /* Skip CRLF after hex size */
         while (i < body_len && (body[i] == '\r' || body[i] == '\n')) i++;
         /* Stop on zero chunk or if we hit end of buffer without proper data */
-        if (sz <= 0) break;
+        if (sz == 0) break;
         if (i + (size_t)sz > body_len) { free(dst); return -1; }
         memcpy(dst + di, body + i, (size_t)sz);
         di += (size_t)sz; i += (size_t)sz;

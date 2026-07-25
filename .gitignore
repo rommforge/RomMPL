@@ -5,3 +5,6 @@
 *.o
 *.a
 build/
+ps2/*.elf
+ps2/*.o
+ps2/*_irx.c

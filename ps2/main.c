@@ -1,6 +1,7 @@
 #include "net.h"
 #include "rommpl/rommapi.h"
 #include "rommpl/transport_lwip.h"
+#include <debug.h>
 #include <stdio.h>
 #include <stdint.h>
 
@@ -29,6 +30,14 @@ static int print_rom(const RomEntry *e, void *u) {
     printf("  [%u] %s -> %s (%llu bytes)\n",
            (unsigned int)e->id, e->name, e->fs_name,
            (unsigned long long)e->fs_size_bytes);
+    /* Mirror a readable slice to the on-screen debug console: the first
+     * 20 titles, then a periodic heartbeat so a big library visibly makes
+     * progress instead of looking hung. The full list still goes to printf. */
+    if (*n <= 20) {
+        scr_printf("  [%u] %s\n", (unsigned int)e->id, e->name);
+    } else if (*n % 500 == 0) {
+        scr_printf("  ... %d so far ...\n", *n);
+    }
     return 0;
 }
 
@@ -41,12 +50,18 @@ int main(void) {
     RommApi api;
     int rr;
 
+    init_scr();
+    scr_printf("\n\n RomMPL netcheck\n ---------------\n");
+
     printf("RomMPL: bringing up LAN...\n");
+    scr_printf(" bringing up LAN...\n");
     if (ps2_net_up(ip) != 0) {
         printf("RomMPL: network bring-up FAILED\n");
+        scr_printf(" network bring-up FAILED\n");
         return 1;
     }
     printf("RomMPL: DHCP up, IP = %s, talking to %s:%d\n", ip, ROMMPL_HOST, ROMMPL_PORT);
+    scr_printf(" DHCP up, IP = %s\n talking to %s:%d\n", ip, ROMMPL_HOST, ROMMPL_PORT);
 
     t = lwip_transport_new();
     api.transport = t;
@@ -57,16 +72,26 @@ int main(void) {
     rr = rommapi_resolve_platform_id(&api, "ps2", &ps2_id);
     if (rr != 0) {
         printf("RomMPL: could not resolve ps2 platform (rc=%d)\n", rr);
+        scr_printf(" could not resolve ps2 platform (rc=%d)\n", rr);
         goto done;
     }
     printf("RomMPL: ps2 platform_id = %u\n", (unsigned int)ps2_id);
+    scr_printf(" ps2 platform_id = %u\n listing games (this can take a while)...\n",
+               (unsigned int)ps2_id);
 
     total = rommapi_list_platform_roms(&api, (int)ps2_id, 50, print_rom, &n);
     printf("RomMPL: listed %d roms (rc=%d)\n", n, total);
+    /* Clear and reprint the result so it is always on screen, regardless of
+     * whether the debug console scrolled. */
+    scr_clear();
+    scr_printf("\n\n RomMPL netcheck -- done\n ------------------------\n\n"
+               " ps2 platform_id = %u\n listed %d PS2 roms (rc=%d)\n",
+               (unsigned int)ps2_id, n, total);
 
 done:
     lwip_transport_free(t);
     ps2_net_down();
     printf("RomMPL: done\n");
+    scr_printf(" done.\n");
     return 0;
 }

@@ -19,7 +19,7 @@ int rommapi_list_platform_roms(RommApi *api, int platform_id, int page_size,
     for (;;) {
         char path[256];
         int pn = snprintf(path, sizeof path,
-            "/api/roms?platform_id=%d&limit=%d&offset=%d",
+            "/api/roms?platform_ids=%d&limit=%d&offset=%d",
             platform_id, page_size, offset);
         if (pn <= 0 || (size_t)pn >= sizeof path) return -1;
 

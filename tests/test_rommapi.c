@@ -31,7 +31,7 @@ int main(void) {
     ASSERT_INT_EQ(s.ids[0], 42);
     ASSERT_INT_EQ(s.ids[1], 7);
     ASSERT_INT_EQ(s.ids[2], 9);
-    ASSERT(strstr(mock_transport_written(t), "platform_id=22") != NULL);
+    ASSERT(strstr(mock_transport_written(t), "platform_ids=22") != NULL);
     ASSERT(strstr(mock_transport_written(t), "offset=2") != NULL);  /* second page requested */
 
     mock_transport_free(t);
